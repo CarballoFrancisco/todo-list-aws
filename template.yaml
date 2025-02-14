@@ -26,13 +26,7 @@ Globals:
         ENDPOINT_OVERRIDE: ""
     
 Resources:
-  # Bucket S3 para almacenar artefactos de funciones Lambda
-  ArtifactBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Sub "${Stage}-todo-list-aws-artifacts"
-
-  # Función Lambda para crear TODO
+  
   CreateTodoFunction:
     Type: AWS::Serverless::Function 
     Properties:
@@ -46,8 +40,6 @@ Resources:
           Properties:
             Path: /todos
             Method: post
-
-  # Función Lambda para listar TODOs
   ListTodosFunction:
     Type: AWS::Serverless::Function 
     Properties:
@@ -61,8 +53,6 @@ Resources:
           Properties:
             Path: /todos
             Method: get
-
-  # Función Lambda para obtener un TODO
   GetTodoFunction:
     Type: AWS::Serverless::Function 
     Properties:
@@ -76,8 +66,6 @@ Resources:
           Properties:
             Path: /todos/{id}
             Method: get
-
-  # Función Lambda para actualizar un TODO
   UpdateTodoFunction:
     Type: AWS::Serverless::Function 
     Properties:
@@ -91,8 +79,6 @@ Resources:
           Properties:
             Path: /todos/{id}
             Method: put
-
-  # Función Lambda para eliminar un TODO
   DeleteTodoFunction:
     Type: AWS::Serverless::Function 
     Properties:
@@ -107,7 +93,6 @@ Resources:
             Path: /todos/{id}
             Method: delete
             
-  # Tabla DynamoDB para almacenar los TODOs
   TodosDynamoDbTable:
     Type: AWS::DynamoDB::Table
     Properties: 
@@ -122,30 +107,26 @@ Resources:
         ReadCapacityUnits: 1
         WriteCapacityUnits: 1
 
+
 Outputs:
-  # ServerlessRestApi es una API creada implícitamente a partir de las funciones Lambda
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
   BaseUrlApi:
     Description: "Base URL of API"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
-
   CreateTodoApi:
     Description: "API Gateway endpoint URL for ${opt:stage} stage for Create TODO"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/todos/"
-
   ListTodosApi:
     Description: "API Gateway endpoint URL for ${opt:stage} stage for List TODO"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/todos"
-
   GetTodoApi:
     Description: "API Gateway endpoint URL for ${opt:stage} stage for Get TODO"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/todos/{id}"
-
   UpdateTodoApi:
     Description: "API Gateway endpoint URL for ${opt:stage} stage for Update TODO"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/todos/{id}"
-
   DeleteTodoApi:
     Description: "API Gateway endpoint URL for ${opt:stage} stage for Delete TODO"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/todos/{id}"
-
-
