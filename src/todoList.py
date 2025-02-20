@@ -13,14 +13,8 @@ def get_table(dynamodb=None):
         if URL:
             print('URL dynamoDB:' + URL)
             boto3.client = functools.partial(boto3.client, endpoint_url=URL)
-<<<<<<< HEAD
             boto3.resource = functools.partial(boto3.resource, endpoint_url=URL)
         dynamodb = boto3.resource("dynamodb")  # Aquí está la corrección
-=======
-            boto3.resource = functools.partial(boto3.resource,
-                                               endpoint_url=URL)
-        dynamodb = boto3.resource("dynamodb")
->>>>>>> 8f450248b91f2a538b84a9597217365b17edae9f
     # fetch todo from the database
     table = dynamodb.Table(os.environ['DYNAMODB_TABLE'])
     return table
@@ -151,3 +145,4 @@ def create_todo_table(dynamodb):
         raise AssertionError()
 
     return table
+
