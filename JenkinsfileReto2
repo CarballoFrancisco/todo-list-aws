@@ -38,19 +38,22 @@ pipeline {
         stage('REST API Read-Only Tests') {
             steps {
                 script {
-                  echo 'Running REST API integration tests using curl...'
+                    echo 'Running REST API integration tests using curl...'
 
                     def baseUrl = sh(script: 'aws cloudformation describe-stacks --stack-name todo-list-stack --region us-east-1 --query "Stacks[0].Outputs[?OutputKey==\'BaseUrlApi\'].OutputValue" --output text', returnStdout: true).trim()
                     def apiUrl = "${baseUrl}/todos"
 
                     // GET todos
                     def responseCode = sh(script: "curl -s -o /dev/null -w '%{http_code}' -X GET ${apiUrl}", returnStdout: true).trim()
+                    
+                    // Comentario explicando que el código 200 significa éxito
+                    echo "Código de estado recibido: ${responseCode} (200 significa que GET se ejecutó correctamente)"
+
                     if (responseCode == '200') {
                         echo "La API responde correctamente."
                     } else {
                         error "Error al acceder a la API. Código de estado: ${responseCode}"
                     }
-                   
                 }
             }
         }
