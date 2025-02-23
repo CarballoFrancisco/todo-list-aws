@@ -1,5 +1,6 @@
 pipeline {
     agent any
+// Esta pipeline la estoy utilizando para realizar el reto número cinco, donde esta pipeline empieza en la rama `develop`, despliega y valida la aplicación en AWS, y luego realiza un merge con `master`.
 
     environment {
         bucketName = "todo-list-aws-bucket-${UUID.randomUUID().toString()}"
@@ -53,76 +54,70 @@ pipeline {
             }
         }
 
-        stage('REST API Integration Tests') {
-            steps {
-                script {
-                    echo 'Running REST API integration tests using curl...'
+       stage('REST API Integration Tests') {
+    steps {
+        script {
+            echo 'Running REST API integration tests using curl...'
 
-                    def baseUrl = sh(script: 'aws cloudformation describe-stacks --stack-name todo-list-stack --region us-east-1 --query "Stacks[0].Outputs[?OutputKey==\'BaseUrlApi\'].OutputValue" --output text', returnStdout: true).trim()
-                    def apiUrl = "${baseUrl}/todos"
+            def baseUrl = sh(script: 'aws cloudformation describe-stacks --stack-name todo-list-stack --region us-east-1 --query "Stacks[0].Outputs[?OutputKey==\'BaseUrlApi\'].OutputValue" --output text', returnStdout: true).trim()
+            def apiUrl = "${baseUrl}/todos"
 
-                    // GET todos
-                    def responseCode = sh(script: "curl -s -o /dev/null -w '%{http_code}' -X GET ${apiUrl}", returnStdout: true).trim()
-                    if (responseCode == '200') {
-                        echo "La API responde correctamente."
-                    } else {
-                        error "Error al acceder a la API. Código de estado: ${responseCode}"
-                    }
+            // GET todos
+            def responseCode = sh(script: "curl -s -o /dev/null -w '%{http_code}' -X GET ${apiUrl}", returnStdout: true).trim()
+            echo "GET /todos - Código de estado: ${responseCode} (200 significa éxito)"
+            if (responseCode != '200') {
+                error "Error al acceder a la API. Código de estado: ${responseCode}"
+            }
 
-                    // POST todos
-                    def postData = '{"text": "Test task", "userId": "12345"}'
-                    def postResponse = sh(script: """
-                        curl -s -X POST ${apiUrl} \
-                        -H "Content-Type: application/json" \
-                        -d '${postData}' \
-                        -w "%{http_code}" -o post_response.json
-                    """, returnStdout: true).trim()
+            // POST todos
+            def postData = '{"text": "Test task", "userId": "12345"}'
+            def postResponse = sh(script: """
+                curl -s -X POST ${apiUrl} \
+                -H "Content-Type: application/json" \
+                -d '${postData}' \
+                -w "%{http_code}" -o post_response.json
+            """, returnStdout: true).trim()
 
-                    echo "POST Response Code: ${postResponse}"
-                    def postResponseBody = readFile('post_response.json')
-                    echo "POST Response Body: ${postResponseBody}"
+            echo "POST /todos - Código de estado: ${postResponse} (200 significa éxito)"
+            if (postResponse != '200') {
+                error "POST request failed! Expected 200, got ${postResponse}"
+            }
 
-                    if (postResponse != '200') {
-                        error "POST request failed! Expected 200, got ${postResponse}"
-                    }
+            // Extraer el ID del TODO creado
+            def todoId = sh(script: "jq -r '.body | fromjson | .id' post_response.json", returnStdout: true).trim()
+            echo "Nuevo TODO creado con ID: ${todoId}"
 
-                    // Extraer el ID del TODO creado
-                    def todoId = sh(script: "jq -r '.body | fromjson | .id' post_response.json", returnStdout: true).trim()
-                    echo "Nuevo TODO creado con ID: ${todoId}"
+            // GET todos/{id}
+            def getTodoResponse = sh(script: "curl -s -o /dev/null -w '%{http_code}' -X GET ${apiUrl}/${todoId}", returnStdout: true).trim()
+            echo "GET /todos/${todoId} - Código de estado: ${getTodoResponse} (200 significa éxito)"
+            if (getTodoResponse != '200') {
+                error "Error al obtener el TODO con ID ${todoId}. Código de estado: ${getTodoResponse}"
+            }
 
-                    // GET todos/{id}
-                    def getTodoResponse = sh(script: "curl -s -o /dev/null -w '%{http_code}' -X GET ${apiUrl}/${todoId}", returnStdout: true).trim()
-                    if (getTodoResponse == '200') {
-                        echo "GET TODO con ID ${todoId} fue exitoso."
-                    } else {
-                        error "Error al obtener el TODO con ID ${todoId}. Código de estado: ${getTodoResponse}"
-                    }
+            // PUT todos/{id} (actualizar antes de eliminar)
+            def putData = '{"text": "Updated task", "userId": "12345", "checked": true}'
+            def putResponse = sh(script: """
+                curl -s -X PUT ${apiUrl}/${todoId} \
+                -H "Content-Type: application/json" \
+                -d '${putData}' \
+                -w "%{http_code}" -o put_response.json
+            """, returnStdout: true).trim()
 
-                    // PUT todos/{id} (actualizar antes de eliminar)
-                    def putData = '{"text": "Updated task", "userId": "12345", "checked": true}'
-                    def putResponse = sh(script: """
-                        curl -s -X PUT ${apiUrl}/${todoId} \
-                        -H "Content-Type: application/json" \
-                        -d '${putData}' \
-                        -w "%{http_code}" -o put_response.json
-                    """, returnStdout: true).trim()
+            echo "PUT /todos/${todoId} - Código de estado: ${putResponse} (200 significa éxito)"
+            if (putResponse != '200') {
+                error "PUT request failed! Expected 200, got ${putResponse}"
+            }
 
-                    echo "PUT Response Code: ${putResponse}"
-                    if (putResponse != '200') {
-                        error "PUT request failed! Expected 200, got ${putResponse}"
-                    }
-
-                    // DELETE todos/{id}
-                    def deleteResponseCode = sh(script: "curl -s -o /dev/null -w '%{http_code}' -X DELETE ${apiUrl}/${todoId}", returnStdout: true).trim()
-                    
-                    if (deleteResponseCode == '200') {
-                        echo "El TODO con ID ${todoId} fue eliminado correctamente."
-                    } else {
-                        error "Error al eliminar el TODO. Código de estado: ${deleteResponseCode}"
-                    }
-                }
+            // DELETE todos/{id}
+            def deleteResponseCode = sh(script: "curl -s -o /dev/null -w '%{http_code}' -X DELETE ${apiUrl}/${todoId}", returnStdout: true).trim()
+            echo "DELETE /todos/${todoId} - Código de estado: ${deleteResponseCode} (200 significa éxito)"
+            if (deleteResponseCode != '200') {
+                error "Error al eliminar el TODO. Código de estado: ${deleteResponseCode}"
             }
         }
+    }
+}
+
 
         stage('Promote to Master') {
             steps {
