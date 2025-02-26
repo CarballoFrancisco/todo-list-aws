@@ -1,7 +1,7 @@
 pipeline {
     agent any
 // Esta pipeline la estoy utilizando para realizar el reto número cinco, donde esta pipeline empieza en la rama `develop`, despliega y valida la aplicación en AWS, y luego realiza un merge con `master`.
-//Por lo que para que jenkins reconozca el archivo en la rama develop he tenido que poner el nombre del archivo como Jenkinsfile.    
+//Por lo que para que jenkins encuentre el archivo en la rama develop he tenido que poner el nombre del archivo como Jenkinsfile.    
 
     environment {
         bucketName = "todo-list-aws-bucket-${UUID.randomUUID().toString()}"
