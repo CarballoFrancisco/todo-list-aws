@@ -1,6 +1,6 @@
 pipeline {
-    // Este Jenkinsfile es para realizar el caso práctico cinco, donde el pipeline realiza el despliegue en producción una vez que el código está en la rama 'master'
-    // Por lo que para que jenkins reconozca el archivo de la rama he tenido que poner el nombre del archivo como Jenkinsfile.
+    // Este Jenkinsfile es para realizar el caso práctico cinco, donde el pipeline realiza el despliegue en producción una vez que el código está en la rama 'master'.
+    // Por lo que para que jenkins encuentre el archivo en la rama master he tenido que poner el nombre del archivo como Jenkinsfile.
 
     agent any
 
